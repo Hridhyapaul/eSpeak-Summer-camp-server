@@ -30,7 +30,20 @@ async function run() {
         const usersCollection = client.db("eSpeakDB").collection("users");
 
         app.get('/courses', async (req, res) => {
-            const result = await courseCollection.find().sort({ enrolled: -1 }).toArray()
+            const result = await courseCollection.find().sort({ available_seats: -1 }).toArray()
+            res.send(result)
+        })
+
+        app.get('/instructorCourse', async (req, res) => {
+            const email = req.query.email
+            const query = { instructor_email: email };
+            const result = await courseCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        app.post('/courses', async (req, res) => {
+            const query = req.body
+            const result = await courseCollection.insertOne(query)
             res.send(result)
         })
 
@@ -38,6 +51,11 @@ async function run() {
 
         app.post('/users', async (req, res) => {
             const user = req.body;
+            const query = { instructor_email: user.email }
+            const existingUser = await usersCollection.findOne(query);
+            if (existingUser) {
+                return res.send({ message: 'user already exist' })
+            }
             const result = await usersCollection.insertOne(user)
             res.send(result)
         })
@@ -49,7 +67,7 @@ async function run() {
             if (!email) {
                 res.send([])
             }
-            const query = { email: email };
+            const query = { instructor_email: email };
             const result = await cartCollection.find(query).toArray();
             res.send(result)
         })
@@ -60,7 +78,7 @@ async function run() {
             const result = await cartCollection.insertOne(item)
             res.send(result)
         })
-        
+
         app.delete('/carts/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
