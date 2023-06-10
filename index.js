@@ -34,6 +34,11 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/manageCourses', async(req, res) => {
+            const result = await courseCollection.find().toArray()
+            res.send(result)
+        })
+
         app.get('/instructorCourse', async (req, res) => {
             const email = req.query.email
             const query = { instructor_email: email };
@@ -70,6 +75,21 @@ async function run() {
             }
             const result = await courseCollection.updateOne(filter, courses, options)
             res.send(result);
+        })
+
+        // update course status.....
+
+        app.patch('/courses/:id', async(req,res) => {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)}
+            const updateStatus = req.body;
+            const updateDoc = {
+                $set: {
+                    status: updateStatus.status
+                }
+            };
+            const result = await courseCollection.updateOne(filter, updateDoc);
+            res.send(result)
         })
 
         // User collection related api....
