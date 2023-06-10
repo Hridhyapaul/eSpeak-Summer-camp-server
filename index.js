@@ -47,6 +47,31 @@ async function run() {
             res.send(result)
         })
 
+        app.put('/updateCourse/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updateCourse = req.body;
+            const courses = {
+                $set: {
+                    title: updateCourse.title,
+                    image: updateCourse.image,
+                    price: updateCourse.price,
+                    duration: updateCourse.duration,
+                    available_seats: updateCourse.available_seats,
+                    modules: updateCourse.modules,
+                    instructor_name: updateCourse.instructor_name,
+                    instructor_email: updateCourse.instructor_email,
+                    category: updateCourse.category,
+                    description: updateCourse.description,
+                    status: updateCourse.status,
+                    feedback: updateCourse.feedback
+                },
+            }
+            const result = await courseCollection.updateOne(filter, courses, options)
+            res.send(result);
+        })
+
         // User collection related api....
 
         app.post('/users', async (req, res) => {
