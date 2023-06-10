@@ -34,7 +34,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/manageCourses', async(req, res) => {
+        app.get('/manageCourses', async (req, res) => {
             const result = await courseCollection.find().toArray()
             res.send(result)
         })
@@ -79,13 +79,28 @@ async function run() {
 
         // update course status.....
 
-        app.patch('/courses/:id', async(req,res) => {
+        app.patch('/courses/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)}
+            const filter = { _id: new ObjectId(id) }
             const updateStatus = req.body;
             const updateDoc = {
                 $set: {
                     status: updateStatus.status
+                }
+            };
+            const result = await courseCollection.updateOne(filter, updateDoc);
+            res.send(result)
+        })
+
+        // update feedback status.....
+
+        app.patch('/courses/:id/feedback', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const { feedback } = req.body;
+            const updateDoc = {
+                $set: {
+                    feedback: feedback
                 }
             };
             const result = await courseCollection.updateOne(filter, updateDoc);
