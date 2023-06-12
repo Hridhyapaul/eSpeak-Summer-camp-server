@@ -245,6 +245,20 @@ async function run() {
             res.send(result);
         })
 
+        // finding Enrolled course apis
+
+        app.get('/enrolledCourse', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const payments = await paymentsCollection.find(query).toArray();
+
+            // Extract course_ids from payments
+            const courseIds = payments.map(payment => payment.course_id).flat().map(id => new ObjectId(id));
+
+            // // Find courses matching the course_ids
+            const courses = await courseCollection.find({ _id: { $in: courseIds } }).toArray();
+            res.send(courses)
+        })
 
         // Review collection
 
