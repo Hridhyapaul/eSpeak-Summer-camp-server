@@ -59,23 +59,43 @@ async function run() {
             res.send({ token })
         })
 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Admin') {
+                return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+        }
+
+        const verifyInstructor = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Instructor') {
+                return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+        }
+
         // Get all courses by sorting...
 
         app.get('/courses', async (req, res) => {
-            const result = await courseCollection.find().sort({ available_seats: -1 }).toArray()
+            const result = await courseCollection.find().sort({ enrolled_students: -1 }).toArray()
             res.send(result)
         })
 
         // Get all courses....
 
-        app.get('/manageCourses', async (req, res) => {
+        app.get('/manageCourses', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await courseCollection.find().toArray()
             res.send(result)
         })
 
         // Get courses by email....
 
-        app.get('/instructorCourse', async (req, res) => {
+        app.get('/instructorCourse', verifyJWT, verifyInstructor, async (req, res) => {
             const email = req.query.email
             const query = { instructor_email: email };
             const result = await courseCollection.find(query).toArray();
@@ -92,7 +112,7 @@ async function run() {
 
         // Update full details of course....
 
-        app.put('/updateCourse/:id', async (req, res) => {
+        app.put('/updateCourse/:id', verifyJWT, verifyInstructor, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const options = { upsert: true }
@@ -160,9 +180,75 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result)
+        })
+
+        // getting users whose role only instructor and finding their number of classes and name of classes...
+
+        app.get('/users/instructors', async (req, res) => {
+
+            const query = { role: 'Instructor' };
+            const instructors = await usersCollection.find(query).toArray();
+
+            const result = await Promise.all(instructors.map(async (instructor) => {
+                const coursesQuery = { instructor_email: instructor.email };
+                const courses = await courseCollection.find(coursesQuery).toArray();
+
+                return {
+                    ...instructor,
+                    coursesCount: courses.length,
+                    courses: courses.map((course) => course.title),
+                };
+            }));
+
+            res.send(result);
+        });
+
+        // finding user email is admin or not....
+
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            if (req.decoded.email !== email) {
+                res.send({ admin: false })
+            }
+
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            const result = { admin: user?.role === 'Admin' }
+            res.send(result);
+        })
+
+        // finding user email is Instructor or not....
+
+        app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            if (req.decoded.email !== email) {
+                res.send({ instructor: false })
+            }
+
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            const result = { instructor: user?.role === 'Instructor' }
+            res.send(result);
+        })
+
+        // finding user email is student or not....
+
+        app.get('/users/student/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            if (req.decoded.email !== email) {
+                res.send({ student: false })
+            }
+
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            const result = { student: user?.role === 'Student' }
+            res.send(result);
         })
 
         app.patch('/users/admin/:id', async (req, res) => {
@@ -203,7 +289,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/carts/:id', async (req, res) => {
+        app.delete('/carts/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await cartCollection.deleteOne(query);
@@ -241,7 +327,9 @@ async function run() {
         })
 
         app.get('/payments', async (req, res) => {
-            const result = await paymentsCollection.find().toArray();
+            const email = req.query.email;
+            const query = { email: email }
+            const result = await paymentsCollection.find(query).toArray();
             res.send(result);
         })
 
