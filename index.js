@@ -49,7 +49,7 @@ async function run() {
         const usersCollection = client.db("eSpeakDB").collection("users");
         const reviewsCollection = client.db("eSpeakDB").collection("review");
         const paymentsCollection = client.db("eSpeakDB").collection("payments");
-        const enrolledCollection = client.db("eSpeakDB").collection("enrolledClass");
+        // const enrolledCollection = client.db("eSpeakDB").collection("enrolledClass");
 
         // JWT API
 
@@ -329,7 +329,8 @@ async function run() {
         app.get('/payments', async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
-            const result = await paymentsCollection.find(query).toArray();
+            const sort = { date: -1 };
+            const result = await paymentsCollection.find(query).sort(sort).toArray();
             res.send(result);
         })
 
